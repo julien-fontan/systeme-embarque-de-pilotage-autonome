@@ -1,3 +1,6 @@
 from math import*
 def affiche(i):
     print(i)
+def nico(x):
+    return x
+    
