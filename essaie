@@ -4,3 +4,5 @@ def affiche(i):
 def nico(x):
     return x
 blabla
+
+"hello world"
