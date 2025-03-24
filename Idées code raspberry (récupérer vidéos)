@@ -22,7 +22,7 @@ cam1.stop()
 cam2.stop()
 
 cam1.stop_preview()
-cam2.stop_preview()
+cam2.stop_preview()W
 
 
 # 2eme possibilité
