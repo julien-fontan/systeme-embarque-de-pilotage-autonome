@@ -103,8 +103,7 @@ ou les cameras n'ont pas une orientation semblables des objetcifs.
 Nous choisirons la méthode stéréovision dans le cas ou nos deux caméras 
 sont alignés horizontalement et de meme axe d'observation.
 
-'''
-import cv2
+'''import cv2
 import numpy as np
 
 # Paramètres pour l'IPM (définis selon votre configuration de caméra)
@@ -170,4 +169,5 @@ while cap.isOpened():
 
 cap.release()
 cv2.destroyAllWindows()
+
 
