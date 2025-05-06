@@ -9,6 +9,7 @@ def canny(image):
     blur = cv2.GaussianBlur(gray, (7, 7), 0)    # réduire le bruit
     _, binary = cv2.threshold(blur, 145, 255, cv2.THRESH_BINARY)
     canny = cv2.Canny(binary, 50, 150)  # canny applique son propre flou ? besoin de blur ?
+    # cv2.imshow("Canny", canny)
     return canny
 
 # Cette fonction affiche les lignes détectées sur fond noir
@@ -21,26 +22,29 @@ def display_lines(image, lines):
     return line_image
 
 # Masque pour n'afficher que la route en face de nous (trapèze)
-def region_of_interest(image, vertices):
+def region_of_interest(image):
     height, width = image.shape[0:2]
     polygons = np.array([[
         (0, height),
         (width, height),
-        (int(width*2/5), 0),
-        (int(width*3/5), 0)]], dtype=np.int32)
+        (width, height * 1/2),
+        (width * 3/5, 0),
+        (width * 2/5, 0),
+        (0, height * 1/2)]], dtype=np.int32)
     mask=np.zeros_like(image)
     cv2.fillPoly(mask, polygons, 255)
     masked_image = cv2.bitwise_and(image, mask)
+    # cv2.imshow("Masque", masked_image)
     return masked_image
     # return image
 
 def make_coordinates(image, line_parameters):
     slope, intercept = line_parameters
-    y1=image.shape[0]
-    y2 = int(y1*(2/5))  # limite haute de la ligne
-    x1 = (y1 - intercept)/slope # y = ax + b
+    y1=image.shape[0]   # on place le début de la ligne en bas de l'image
+    y2 = y1*(1/4)  # limite haute de la ligne
+    x1 = (y1 - intercept)/slope # y = ax + b, donc x = (y - b)/a
     x2 = (y2 - intercept)/slope
-    return np.array([x1, y1, x2, y2])
+    return np.array([x1, y1, x2, y2], dtype=np.int32)
 
 # Marche pour une image avec deux lignes droites
 def average_slope_intercept(image, lines):
@@ -80,7 +84,7 @@ def average_slope_intercept(image, lines):
         else :
             right_fit.append((slope, intercept))
     left_fit_average = np.average(left_fit, axis=0)
-    right_fit_average = np.average(right_fit, axis=1)
+    right_fit_average = np.average(right_fit, axis=0)
     left_line = make_coordinates(image, left_fit_average)
     right_line = make_coordinates(image, right_fit_average)
     return np.array([left_line, right_line])
@@ -91,7 +95,7 @@ Traitement sur une image
 image = cv2.imread('road.jpeg')
 lane_image=np.copy(image)
 treated_image = canny(lane_image)
-cropped_image = region_of_interest(treated_image, vertices=None)
+cropped_image = region_of_interest(treated_image)
 # 1eme paramètre : taille quadrillage, si diminue, plus de lignes détectées mais moins précises et temps de calcul plus long
 # 3eme paramètre : seuil de pts d'intersection devant être détectés pour qu'une ligne soit considérée comme valide
 # 4eme paramètre : longueur minimale d'une ligne
@@ -100,22 +104,21 @@ lines = cv2.HoughLinesP(cropped_image, 2, np.pi / 180, 50, minLineLength=100, ma
 average_lines = average_slope_intercept(lane_image, lines)
 line_image=display_lines(lane_image, average_lines)
 combo_image=cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
-cv2.imshow("de base", image)
 cv2.imshow("result", combo_image)
 cv2.waitKey(0)
 
-# '''
-# Traitement sur une vidéo
-# '''
-# cap = cv2.VideoCapture("test2.mp4")
+'''
+Traitement sur une vidéo
+'''
+# cap = cv2.VideoCapture("road_test_video.mp4")
 # while(cap.isOpened()):
 #     _, frame = cap.read()
 #     canny_image = canny(frame)
 #     cropped_image = region_of_interest(canny_image)
-#     lines = cv2.HoughLinesP(cropped_image, 2, np.pi/180, 100, np.Array([]), minLineLength=40, maxLineGap=4)
+#     lines = cv2.HoughLinesP(cropped_image, 2, np.pi / 180, 50, minLineLength=50, maxLineGap=4)
 #     averaged_lines = average_slope_intercept(frame, lines)
 #     line_image = display_lines(frame, averaged_lines)
-#     combo_image = cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
+#     combo_image = cv2.addWeighted(frame, 0.8, line_image, 1, 1)
 #     cv2.imshow("result", combo_image)
 #     if cv2.waitKey(1) & 0xFF == ord('q'):
 #         break
