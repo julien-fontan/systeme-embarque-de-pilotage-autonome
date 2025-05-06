@@ -29,6 +29,21 @@ def region_of_interest(image, vertices):
     masked_image = cv2.bitwise_and(image, mask)
     return masked_image
 
+def average_slope_intercept(image, lines):
+    left_fit=[]
+    right_fit=[]
+    for line in lines :
+        x1, y1, x2, y2 = line.reshape(4)
+        parameters = np.polyfit((x1,x2), (y1,y2), 1)
+        slope = parameters[0]
+        intercept = parameters[1]
+        if slope < 0 :
+            left_fit.append((slope, intercept))
+        else :
+            right_fit.append((slope, intercept))
+        left_fit_average = np.average(left_fit, axis='0')
+            
+
 image = cv2.imread('road.jpeg')
 copy=np.copy(image)
 treated_image = canny(copy)
