@@ -92,102 +92,37 @@ def average_slope_intercept(image, lines):
 '''
 Traitement sur une image
 '''
-image = cv2.imread('road.jpeg')
-lane_image=np.copy(image)
-treated_image = canny(lane_image)
-cropped_image = region_of_interest(treated_image)
-# 1eme paramètre : taille quadrillage, si diminue, plus de lignes détectées mais moins précises et temps de calcul plus long
-# 3eme paramètre : seuil de pts d'intersection devant être détectés pour qu'une ligne soit considérée comme valide
-# 4eme paramètre : longueur minimale d'une ligne
-# 5eme paramètre : distance maximale entre deux points pour qu'ils soient considérés comme un seul point
-lines = cv2.HoughLinesP(cropped_image, 2, np.pi / 180, 50, minLineLength=100, maxLineGap=4)
-average_lines = average_slope_intercept(lane_image, lines)
-line_image=display_lines(lane_image, average_lines)
-combo_image=cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
-cv2.imshow("result", combo_image)
-cv2.waitKey(0)
+# image = cv2.imread('road.jpeg')
+# lane_image=np.copy(image)
+# treated_image = canny(lane_image)
+# cropped_image = region_of_interest(treated_image)
+# # 1eme paramètre : taille quadrillage, si diminue, plus de lignes détectées mais moins précises et temps de calcul plus long
+# # 3eme paramètre : seuil de pts d'intersection devant être détectés pour qu'une ligne soit considérée comme valide
+# # 4eme paramètre : longueur minimale d'une ligne
+# # 5eme paramètre : distance maximale entre deux points pour qu'ils soient considérés comme un seul point
+# lines = cv2.HoughLinesP(cropped_image, 2, np.pi / 180, 50, minLineLength=100, maxLineGap=4)
+# average_lines = average_slope_intercept(lane_image, lines)
+# line_image=display_lines(lane_image, average_lines)
+# combo_image=cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
+# cv2.imshow("result", combo_image)
+# cv2.waitKey(0)
 
 '''
 Traitement sur une vidéo
 '''
-# cap = cv2.VideoCapture("road_test_video.mp4")
-# while(cap.isOpened()):
-#     _, frame = cap.read()
-#     canny_image = canny(frame)
-#     cropped_image = region_of_interest(canny_image)
-#     lines = cv2.HoughLinesP(cropped_image, 2, np.pi / 180, 50, minLineLength=50, maxLineGap=4)
-#     averaged_lines = average_slope_intercept(frame, lines)
-#     line_image = display_lines(frame, averaged_lines)
-#     combo_image = cv2.addWeighted(frame, 0.8, line_image, 1, 1)
-#     cv2.imshow("result", combo_image)
-#     if cv2.waitKey(1) & 0xFF == ord('q'):
-#         break
-#     cap.release()
-#     cv2.destroyAllWindows()
-
-
-
-
-
-
-
-
-
-
-'''
-Deuxième solution (abandonnée) :
-
-if lines is not None:
-    for line in lines:
-        x1, y1, x2, y2 = line[0]
-        plt.plot([x1, x2], [y1, y2], 'r')
-
-def get_angle(x1, y1, x2, y2):
-    return math.degrees(math.atan2(y2 - y1, x2 - x1))
-
-def process_image(binary):
-    # dst=binary
-    # cdst=binary
-    cdstP=np.copy(binary)
-    
-    # dst = cv2.Canny(binary, 50, 200, None, 3)
-    # binary = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
-    # cdstP = np.copy(cdst)
-
-    # lines = cv2.HoughLines(dst, 1, np.pi / 180, 150, None, 0, 0)
-    # if lines is not None:
-    #     for i in range(len(lines)):
-    #         rho, theta = lines[i][0]
-    #         a, b = math.cos(theta), math.sin(theta)
-    #         x0, y0 = a * rho, b * rho
-    #         pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
-    #         pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
-    #         cv2.line(cdst, pt1, pt2, (0, 0, 255), 3, cv2.LINE_AA)
-
-    linesP = cv2.HoughLinesP(binary, 1, np.pi / 180, 50, None, 100, 50)
-    filtered_lines = []
-    angle_thresh, dist_thresh = 5, 10
-
-    if linesP is not None:
-        for i in range(len(linesP)):
-            x1, y1, x2, y2 = linesP[i][0]
-            angle1 = get_angle(x1, y1, x2, y2)
-            keep = True
-            for x3, y3, x4, y4 in filtered_lines:
-                angle2 = get_angle(x3, y3, x4, y4)
-                if abs(angle1 - angle2) < angle_thresh and \
-                    abs(x1 - x3) < dist_thresh and abs(y1 - y3) < dist_thresh:
-                    keep = False
-                    break
-            if keep:
-                filtered_lines.append((x1, y1, x2, y2))
-
-        for (x1, y1, x2, y2) in filtered_lines:
-            cv2.line(binary, (x1, y1), (x2, y2), (0, 255, 0), 3, cv2.LINE_AA)
-
-    # cv2.imshow("Lignes - Hough standard", cdst)
-    cv2.imshow("Lignes filtrées - Hough probabiliste", cdstP)
-    cv2.waitKey()
-
-process_image(binary)
-'''
+cap = cv2.VideoCapture("road_test_video.mp4")
+while(cap.isOpened()):
+    _, frame = cap.read()
+    canny_image = canny(frame)
+    cropped_image = region_of_interest(canny_image)
+    lines = cv2.HoughLinesP(cropped_image, 2, np.pi / 180, 50, minLineLength=50, maxLineGap=4)
+    averaged_lines = average_slope_intercept(frame, lines)
+    line_image = display_lines(frame, averaged_lines)
+    combo_image = cv2.addWeighted(frame, 0.8, line_image, 1, 1)
+    # Resize the frame to make the window smaller
+    resized_combo_image = cv2.resize(combo_image, (1200, 600))  # Adjust width and height as needed
+    cv2.imshow("result", resized_combo_image)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+cap.release()
+cv2.destroyAllWindows()
