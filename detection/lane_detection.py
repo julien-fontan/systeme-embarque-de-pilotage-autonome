@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from parameter_adjuster import ParameterAdjuster
 
 class LaneDetection:
@@ -11,9 +10,7 @@ class LaneDetection:
         :param camera_side: 'left' or 'right' for dual cameras to specify the side of the camera.
         :param parameters: Dictionary of parameters for lane detection.
         """
-        self.cap = cv2.VideoCapture(video_source)
-        if not self.cap.isOpened():
-            raise ValueError(f"Impossible d'ouvrir la vidéo : {video_source}")
+        self.cap = cv2.VideoCapture(video_source)        
         self.dual_camera = dual_camera
         self.camera_side = camera_side  # Only relevant for dual cameras
         parameters = parameters or {}  # Remplace None par un dictionnaire vide
@@ -121,10 +118,11 @@ class LaneDetection:
         }
 
 if __name__ == "__main__":
-    video_source = "../media_tests/road_video.mp4"
-    dual_camera = True  # Set to True for dual cameras, False for single camera
-    camera_side = 'left'  # Use 'left' or 'right' for dual cameras
-    lane_detector = LaneDetection(video_source, dual_camera=dual_camera, camera_side=camera_side)
+    from pathlib import Path
+    # Répertoire racine du projet, basé sur la position de main.py
+    ROOT_DIR = Path(__file__).resolve().parent.parent
+    video_source = ROOT_DIR / "media_tests" / "road_video.mp4"
+    lane_detector = LaneDetection(video_source, dual_camera=False, camera_side="left")
     adjuster = ParameterAdjuster(lane_detector)
     adjuster.adjust_all_parameters()
     lane_detector.run()
