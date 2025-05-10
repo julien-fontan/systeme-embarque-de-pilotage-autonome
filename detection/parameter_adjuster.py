@@ -79,7 +79,10 @@ class ParameterAdjuster:
         cv2.destroyWindow("Hough")
 
     def adjust_all_parameters(self):
-        _, first_frame = self.lane_detector.cap.read()
+        ret, first_frame = self.lane_detector.cap.read()
+        if not ret or first_frame is None:
+            print("Erreur : Impossible de lire la première image de la vidéo.")
+            return
         self.adjust_canny_parameters(first_frame)
         self.adjust_trapezoid_parameters(first_frame)
         processed_image = self.lane_detector.canny(first_frame)

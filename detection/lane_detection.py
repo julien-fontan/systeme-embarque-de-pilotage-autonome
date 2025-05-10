@@ -4,17 +4,28 @@ import matplotlib.pyplot as plt
 from parameter_adjuster import ParameterAdjuster
 
 class LaneDetection:
-    def __init__(self, video_source):
+    def __init__(self, video_source, dual_camera=False, camera_side=None, parameters=None):
+        """
+        :param video_source: Video source for the camera(s).
+        :param dual_camera: Boolean indicating if dual cameras are used.
+        :param camera_side: 'left' or 'right' for dual cameras to specify the side of the camera.
+        :param parameters: Dictionary of parameters for lane detection.
+        """
         self.cap = cv2.VideoCapture(video_source)
-        self.blur_kernel = 7
-        self.threshold_value = 145
-        self.canny_min = 50
-        self.canny_max = 150
-        self.top_width = 0.4
-        self.bottom_width = 1.0
-        self.trapezoid_height = 0.5
-        self.min_line_length = 50
-        self.max_line_gap = 4
+        if not self.cap.isOpened():
+            raise ValueError(f"Impossible d'ouvrir la vidéo : {video_source}")
+        self.dual_camera = dual_camera
+        self.camera_side = camera_side  # Only relevant for dual cameras
+        parameters = parameters or {}  # Remplace None par un dictionnaire vide
+        self.blur_kernel = parameters.get("blur_kernel", 7)
+        self.threshold_value = parameters.get("threshold_value", 145)
+        self.canny_min = parameters.get("canny_min", 50)
+        self.canny_max = parameters.get("canny_max", 150)
+        self.top_width = parameters.get("top_width", 0.4)
+        self.bottom_width = parameters.get("bottom_width", 1.0)
+        self.trapezoid_height = parameters.get("trapezoid_height", 0.5)
+        self.min_line_length = parameters.get("min_line_length", 50)
+        self.max_line_gap = parameters.get("max_line_gap", 4)
 
     def canny(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -53,9 +64,19 @@ class LaneDetection:
             else:
                 right_fit.append((slope, intercept))
 
-        left_line = self.make_coordinates(image, np.average(left_fit, axis=0)) if left_fit else None
-        right_line = self.make_coordinates(image, np.average(right_fit, axis=0)) if right_fit else None
-        return np.array([line for line in [left_line, right_line] if line is not None])
+        if self.dual_camera:
+            # For dual cameras, classify lines based on the camera side
+            if self.camera_side == 'left':
+                left_line = self.make_coordinates(image, np.average(left_fit, axis=0)) if left_fit else None
+                return np.array([left_line]) if left_line is not None else []
+            elif self.camera_side == 'right':
+                right_line = self.make_coordinates(image, np.average(right_fit, axis=0)) if right_fit else None
+                return np.array([right_line]) if right_line is not None else []
+        else:
+            # For single camera, return both left and right lines
+            left_line = self.make_coordinates(image, np.average(left_fit, axis=0)) if left_fit else None
+            right_line = self.make_coordinates(image, np.average(right_fit, axis=0)) if right_fit else None
+            return np.array([line for line in [left_line, right_line] if line is not None])
 
     def make_coordinates(self, image, line_parameters):
         slope, intercept = line_parameters
@@ -86,9 +107,24 @@ class LaneDetection:
         self.cap.release()
         cv2.destroyAllWindows()
 
+    def get_parameters(self):
+        return {
+            "blur_kernel": self.blur_kernel,
+            "threshold_value": self.threshold_value,
+            "canny_min": self.canny_min,
+            "canny_max": self.canny_max,
+            "top_width": self.top_width,
+            "bottom_width": self.bottom_width,
+            "trapezoid_height": self.trapezoid_height,
+            "min_line_length": self.min_line_length,
+            "max_line_gap": self.max_line_gap,
+        }
+
 if __name__ == "__main__":
-    video_source = "road_test_video.mp4"
-    lane_detector = LaneDetection(video_source)
+    video_source = "../media_tests/road_video.mp4"
+    dual_camera = True  # Set to True for dual cameras, False for single camera
+    camera_side = 'left'  # Use 'left' or 'right' for dual cameras
+    lane_detector = LaneDetection(video_source, dual_camera=dual_camera, camera_side=camera_side)
     adjuster = ParameterAdjuster(lane_detector)
     adjuster.adjust_all_parameters()
     lane_detector.run()
