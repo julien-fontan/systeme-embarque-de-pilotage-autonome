@@ -1,16 +1,23 @@
 import cv2
 import numpy as np
-from parameter_adjuster import ParameterAdjuster
+from .parameter_adjuster import ParameterAdjuster
 
 class LaneDetection:
-    def __init__(self, video_source, dual_camera=False, camera_side=None, parameters=None):
+    def __init__(self, video_source, dual_camera=False, camera_side=None, parameters=None, use_region_of_interest=True):
         """
-        :param video_source: Video source for the camera(s).
+        :param video_source: Video source for the camera(s) (can be a path, int, or CameraStream object).
         :param dual_camera: Boolean indicating if dual cameras are used.
         :param camera_side: 'left' or 'right' for dual cameras to specify the side of the camera.
         :param parameters: Dictionary of parameters for lane detection.
+        :param use_region_of_interest: Boolean to use ROI or not.
         """
-        self.cap = cv2.VideoCapture(video_source)        
+        # Si video_source a une méthode get_frame, c'est un objet CameraStream
+        self.video_source = video_source
+        self.use_region_of_interest = use_region_of_interest
+        if hasattr(video_source, "get_frame"):
+            self.cap = None  # On utilisera get_frame()
+        else:
+            self.cap = cv2.VideoCapture(video_source)
         self.dual_camera = dual_camera
         self.camera_side = camera_side  # Only relevant for dual cameras
         parameters = parameters or {}  # Remplace None par un dictionnaire vide
@@ -85,24 +92,37 @@ class LaneDetection:
 
     def process_frame(self, frame):
         canny_image = self.canny(frame)
-        cropped_image = self.region_of_interest(canny_image)
+        cropped_image = self.region_of_interest(canny_image) if self.use_region_of_interest else canny_image
         lines = cv2.HoughLinesP(cropped_image, 2, np.pi / 180, 50, minLineLength=self.min_line_length, maxLineGap=self.max_line_gap)
         averaged_lines = self.average_slope_intercept(frame, lines) if lines is not None else []
         line_image = self.display_lines(frame, averaged_lines)
         return cv2.addWeighted(frame, 0.8, line_image, 1, 1)
 
     def run(self):
-        while self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if not ret:
-                break
-            processed_frame = self.process_frame(frame)
-            resized_processed_frame = cv2.resize(processed_frame, (1200, 600))
-            cv2.imshow("Lane Detection", resized_processed_frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        self.cap.release()
-        cv2.destroyAllWindows()
+        if self.cap is not None:
+            while self.cap.isOpened():
+                ret, frame = self.cap.read()
+                if not ret:
+                    break
+                processed_frame = self.process_frame(frame)
+                resized_processed_frame = cv2.resize(processed_frame, (1200, 600))
+                cv2.imshow("Lane Detection", resized_processed_frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+            self.cap.release()
+            cv2.destroyAllWindows()
+        elif hasattr(self.video_source, "get_frame"):
+            # Utilisation d'un objet CameraStream
+            try:
+                while True:
+                    frame = self.video_source.get_frame()
+                    processed_frame = self.process_frame(frame)
+                    resized_processed_frame = cv2.resize(processed_frame, (1200, 600))
+                    cv2.imshow("Lane Detection", resized_processed_frame)
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
+            finally:
+                cv2.destroyAllWindows()
 
     def get_parameters(self):
         return {
