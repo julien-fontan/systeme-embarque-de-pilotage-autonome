@@ -1,0 +1,1 @@
+{"blur_kernel": 7, "threshold_value": 145, "canny_min": 50, "canny_max": 150, "top_width": 1.0, "bottom_width": 1.0, "trapezoid_height": 1.0, "min_line_length": 50, "max_line_gap": 4}
