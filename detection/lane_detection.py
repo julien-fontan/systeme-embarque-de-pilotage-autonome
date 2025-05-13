@@ -1,4 +1,5 @@
 import cv2
+import os
 import numpy as np
 from .parameter_adjuster import ParameterAdjuster
 
@@ -17,7 +18,7 @@ class LaneDetection:
         if hasattr(video_source, "get_frame"):
             self.cap = None  # On utilisera get_frame()
         else:
-            self.cap = cv2.VideoCapture(video_source)
+            self.cap = cv2.VideoCapture(video_source)   # si on utilise un fichier vidéo
         self.dual_camera = dual_camera
         self.camera_side = camera_side  # Only relevant for dual cameras
         parameters = parameters or {}  # Remplace None par un dictionnaire vide
@@ -138,10 +139,7 @@ class LaneDetection:
         }
 
 if __name__ == "__main__":
-    from pathlib import Path
-    # Répertoire racine du projet, basé sur la position de main.py
-    ROOT_DIR = Path(__file__).resolve().parent.parent
-    video_source = ROOT_DIR / "media_tests" / "road_video.mp4"
+    video_source = os.path.join(os.path.dirname(__file__), "../media_tests/road_video.mp4")
     lane_detector = LaneDetection(video_source, dual_camera=False, camera_side="left")
     adjuster = ParameterAdjuster(lane_detector)
     adjuster.adjust_all_parameters()

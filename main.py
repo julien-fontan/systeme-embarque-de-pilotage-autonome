@@ -10,8 +10,8 @@ def main(dual_camera=False, show_visuals=True, adjust_parameters=False, use_regi
     if adjust_parameters:
         # Utiliser la caméra 0 pour ajuster les paramètres
         camera1 = CameraStream(camera_id=0)
-        frame = camera1.get_frame()
-        lane_detector = LaneDetection(video_source=0, dual_camera=dual_camera)
+        # frame = camera1.get_frame()
+        lane_detector = LaneDetection(video_source=camera1, dual_camera=dual_camera)
         adjuster = ParameterAdjuster(lane_detector)
         adjuster.adjust_all_parameters()
         # Sauvegarder les paramètres ajustés dans un fichier
@@ -32,7 +32,6 @@ def main(dual_camera=False, show_visuals=True, adjust_parameters=False, use_regi
     camera1 = CameraStream(camera_id=0)
     camera2 = CameraStream(camera_id=1) if dual_camera else None
 
-    # Passe la source vidéo correcte à LaneDetection
     if dual_camera:
         lane_detector1 = LaneDetection(video_source=camera1, dual_camera=True, camera_side='left', parameters=parameters, use_region_of_interest=use_region_of_interest)
         lane_detector2 = LaneDetection(video_source=camera2, dual_camera=True, camera_side='right', parameters=parameters, use_region_of_interest=use_region_of_interest)
@@ -68,7 +67,7 @@ def main(dual_camera=False, show_visuals=True, adjust_parameters=False, use_regi
             cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main(dual_camera=False, show_visuals=False, adjust_parameters=True, use_region_of_interest=True)
+    main(dual_camera=False, show_visuals=True, adjust_parameters=True, use_region_of_interest=True)
 
 
 # rpicam-hello --list cameras
