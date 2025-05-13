@@ -99,6 +99,19 @@ class LaneDetection:
         line_image = self.display_lines(frame, averaged_lines)
         return cv2.addWeighted(frame, 0.8, line_image, 1, 1)
 
+    def get_parameters(self):
+        return {
+            "blur_kernel": self.blur_kernel,
+            "threshold_value": self.threshold_value,
+            "canny_min": self.canny_min,
+            "canny_max": self.canny_max,
+            "top_width": self.top_width,
+            "bottom_width": self.bottom_width,
+            "trapezoid_height": self.trapezoid_height,
+            "min_line_length": self.min_line_length,
+            "max_line_gap": self.max_line_gap,
+        }
+    
     def run(self):
         if self.cap is not None:
             while self.cap.isOpened():
@@ -124,19 +137,6 @@ class LaneDetection:
                         break
             finally:
                 cv2.destroyAllWindows()
-
-    def get_parameters(self):
-        return {
-            "blur_kernel": self.blur_kernel,
-            "threshold_value": self.threshold_value,
-            "canny_min": self.canny_min,
-            "canny_max": self.canny_max,
-            "top_width": self.top_width,
-            "bottom_width": self.bottom_width,
-            "trapezoid_height": self.trapezoid_height,
-            "min_line_length": self.min_line_length,
-            "max_line_gap": self.max_line_gap,
-        }
 
 if __name__ == "__main__":
     video_source = os.path.join(os.path.dirname(__file__), "../media_tests/road_video.mp4")
