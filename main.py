@@ -1,6 +1,8 @@
 from camera.camera_stream import CameraStream
 from detection.lane_detection import LaneDetection
 from detection.parameter_adjuster import ParameterAdjuster
+from decision.control import LaneFollower
+from motor.motor_controller import MotorController
 import cv2
 import json
 
@@ -38,6 +40,9 @@ def main(dual_camera=False, show_visuals=True, adjust_parameters=False, use_regi
     else:
         lane_detector = LaneDetection(video_source=camera1, dual_camera=False, parameters=parameters, use_region_of_interest=use_region_of_interest)
 
+    motor_controller = MotorController()
+    lane_follower = LaneFollower(motor_controller)
+
     try:
         while True:
             frame1 = camera1.get_frame()
@@ -52,8 +57,11 @@ def main(dual_camera=False, show_visuals=True, adjust_parameters=False, use_regi
                     processed_frame2 = cv2.resize(processed_frame2, (w, h))
                     combined_frame = cv2.hconcat([processed_frame1, processed_frame2])
                     cv2.imshow("Lane Detection - Dual Cameras", combined_frame)
+                    # Optionnel : fusionner les infos des deux caméras
             else:
                 processed_frame = lane_detector.process_frame(frame1)
+                lines = lane_detector.average_slope_intercept(frame1, cv2.HoughLinesP(...))  # à adapter
+                lane_follower.follow_lane(lines, frame1.shape)
                 if show_visuals:
                     cv2.imshow("Lane Detection - Single Camera", processed_frame)
 
