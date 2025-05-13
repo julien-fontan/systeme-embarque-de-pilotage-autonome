@@ -63,5 +63,5 @@ def test_all_commands():
         GPIO.cleanup()
 
 # Exemple d'utilisation
-if _name_ == "_main_":
+if __name__ == "_main_":
     test_all_commands()

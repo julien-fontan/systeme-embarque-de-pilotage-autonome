@@ -52,16 +52,21 @@ class LaneDetection:
 
     def display_lines(self, image, lines):
         line_image = np.zeros_like(image)
-        if lines is not None:
+        if lines is not None and len(lines) > 0:
             for line in lines:
-                x1, y1, x2, y2 = line.reshape(4)
-                cv2.line(line_image, (x1, y1), (x2, y2), (0, 0, 255), 10)
+                if line is not None and len(line) == 4 and np.all(np.isfinite(line)):
+                    x1, y1, x2, y2 = line.reshape(4)
+                    cv2.line(line_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 10)
         return line_image
 
     def average_slope_intercept(self, image, lines):
         left_fit, right_fit = [], []
+        if lines is None:
+            return []
         for line in lines:
             x1, y1, x2, y2 = line.reshape(4)
+            if x1 == x2:  # éviter division par zéro
+                continue
             parameters = np.polyfit((x1, x2), (y1, y2), 1)
             slope, intercept = parameters
             if slope < 0:
@@ -70,18 +75,29 @@ class LaneDetection:
                 right_fit.append((slope, intercept))
 
         if self.dual_camera:
-            # For dual cameras, classify lines based on the camera side
+            # Pour deux caméras, ne retourner qu'une ligne selon le côté
             if self.camera_side == 'left':
                 left_line = self.make_coordinates(image, np.average(left_fit, axis=0)) if left_fit else None
                 return np.array([left_line]) if left_line is not None else []
             elif self.camera_side == 'right':
                 right_line = self.make_coordinates(image, np.average(right_fit, axis=0)) if right_fit else None
                 return np.array([right_line]) if right_line is not None else []
+            else:
+                return []
         else:
-            # For single camera, return both left and right lines
-            left_line = self.make_coordinates(image, np.average(left_fit, axis=0)) if left_fit else None
-            right_line = self.make_coordinates(image, np.average(right_fit, axis=0)) if right_fit else None
-            return np.array([line for line in [left_line, right_line] if line is not None])
+            # Pour une seule caméra, retourner les deux lignes si elles existent
+            result_lines = []
+            if left_fit:
+                left_line = self.make_coordinates(image, np.average(left_fit, axis=0))
+                if left_line is not None:
+                    result_lines.append(left_line)
+            if right_fit:
+                right_line = self.make_coordinates(image, np.average(right_fit, axis=0))
+                if right_line is not None:
+                    result_lines.append(right_line)
+            # Si une seule ligne détectée, possibilité d'extrapoler ou d'afficher une alerte
+            # Ici, on ne fait rien, mais on pourrait ajouter une estimation.
+            return np.array(result_lines)
 
     def make_coordinates(self, image, line_parameters):
         slope, intercept = line_parameters
