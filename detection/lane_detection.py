@@ -130,11 +130,10 @@ class LaneDetection:
     def display(self, frame, lines, window_name="Lane Detection", resize=(1200, 600)):
         """Affiche le résultat visuel de la détection de lignes sur une frame."""
         line_image = np.zeros_like(frame)
-        if lines is not None and len(lines) > 0:
+        if lines is not None:
             for line in lines:
-                if line is not None and len(line) == 4 and np.all(np.isfinite(line)):
-                    x1, y1, x2, y2 = line.reshape(4)
-                    cv2.line(line_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 10)
+                x1, y1, x2, y2 = map(int, line)
+                cv2.line(line_image, (x1, y1), (x2, y2), (0, 0, 255), 10)
         combo_image = cv2.addWeighted(frame, 0.8, line_image, 1, 1)
         combo_image_resized = cv2.resize(combo_image,resize)
         cv2.imshow(window_name, combo_image_resized)

@@ -54,7 +54,6 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):  # sup
                     lane_detector2.display(frame2, lines2, window_name="Lane Detection - Camera 2", resize=None)
             else:
                 lines1 = lane_detector1.get_lines(frame1)
-                # lane_follower.follow_lane(lines, frame1.shape)  # décommenter si nécessaire
                 if show_visuals:
                     lane_detector1.display(frame1, lines1, window_name="Lane Detection - Single Camera")
 
