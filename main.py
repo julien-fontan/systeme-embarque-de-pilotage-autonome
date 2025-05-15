@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 import json
 
-def main(dual_camera=False, show_visuals=False, adjust_parameters=False):  # supprimé use_region_of_interest
+def main(dual_camera=False, show_visuals=False, adjust_parameters=False):
 
     config_file = "dual_camera_config.json" if dual_camera else "single_camera_config.json"
     
@@ -83,8 +83,7 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):  # sup
 
 if __name__ == "__main__":
     main(dual_camera=False, show_visuals=True, adjust_parameters=True)
-    """ Si la raspberry est connectée en SSH, utiliser show_visuals=False
-    Si vous voulez visualiser les images en temps réel (et potentiellement
-    utiliser adjust_parameters), connectez la raspberry à un écran,
-    éxécutez ce code sur un terminal directement sur la carte,et réglez
-    show_visuals=True."""
+    """ Si la raspberry est connectée en SSH, utiliser show_visuals=False (donc adjust_parameters=False)
+    Si vous voulez visualiser les images en temps réel (et potentiellement utiliser adjust_parameters),
+    connectez la raspberry à un écran, éxécutez ce code sur un terminal directement sur la carte,
+    et réglez show_visuals=True."""
