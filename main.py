@@ -74,7 +74,7 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):  # sup
             cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main(dual_camera=False, show_visuals=False, adjust_parameters=False)
+    main(dual_camera=False, show_visuals=True, adjust_parameters=True)
     """ Si la raspberry est connectée en SSH, utiliser show_visuals=False
     Si vous voulez visualiser les images en temps réel (et potentiellement
     utiliser adjust_parameters), connectez la raspberry à un écran,

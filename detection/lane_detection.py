@@ -55,6 +55,7 @@ class LaneDetection:
 
     def region_of_interest(self, image):
         """Applique un masque trapézoïdal à l'image pour ne garder que la zone d'intérêt."""
+        self._set_image_shape(image)
         polygons = np.array([
             (int(self.width * (1 - self.bottom_width) / 2), self.height),
             (int(self.width * (1 + self.bottom_width) / 2), self.height),
@@ -128,8 +129,7 @@ class LaneDetection:
 
     def display(self, frame, lines, window_name="Lane Detection", resize=(1200, 600)):
         """Affiche le résultat visuel de la détection de lignes sur une frame."""
-        self._set_image_shape(frame)
-        line_image = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        line_image = np.zeros_like(frame)
         if lines is not None and len(lines) > 0:
             for line in lines:
                 if line is not None and len(line) == 4 and np.all(np.isfinite(line)):
