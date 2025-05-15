@@ -11,7 +11,7 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):  # sup
 
     config_file = "dual_camera_config.json" if dual_camera else "single_camera_config.json"
     
-    if adjust_parameters:
+    if adjust_parameters and show_visuals:
         # Utiliser la caméra 0 pour ajuster les paramètres
         camera1 = CameraStream(camera_id=0)
         lane_detector = LaneDetection(video_source=camera1, dual_camera=dual_camera)
@@ -74,8 +74,9 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):  # sup
             cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main(dual_camera=False, show_visuals=True, adjust_parameters=True)
+    main(dual_camera=False, show_visuals=False, adjust_parameters=False)
     """ Si la raspberry est connectée en SSH, utiliser show_visuals=False
-    Si vous voulez visualiser les images en temps réel, connectez la raspberry
-    à un écran, éxécutez ce code sur un terminal directement sur la carte,
-    et réglez show_visuals=True."""
+    Si vous voulez visualiser les images en temps réel (et potentiellement
+    utiliser adjust_parameters), connectez la raspberry à un écran,
+    éxécutez ce code sur un terminal directement sur la carte,et réglez
+    show_visuals=True."""
