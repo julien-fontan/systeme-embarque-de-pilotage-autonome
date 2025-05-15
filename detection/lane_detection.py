@@ -4,17 +4,10 @@ import numpy as np
 from .parameter_adjuster import ParameterAdjuster
 
 class LaneDetection:
-    def __init__(self, video_source, dual_camera=False, camera_side=None, parameters=None, use_region_of_interest=True):
-        """
-        :param video_source: Video source for the camera(s) (can be a path, int, or CameraStream object).
-        :param dual_camera: Boolean indicating if dual cameras are used.
-        :param camera_side: 'left' or 'right' for dual cameras to specify the side of the camera.
-        :param parameters: Dictionary of parameters for lane detection.
-        :param use_region_of_interest: Boolean to use ROI or not.
-        """
+    def __init__(self, video_source, dual_camera=False, camera_side=None, parameters=None):
+        """Initialise la détection de lignes avec la source vidéo et les paramètres."""
         # Si video_source a une méthode get_frame, c'est un objet CameraStream
         self.video_source = video_source
-        self.use_region_of_interest = use_region_of_interest
         if hasattr(video_source, "get_frame"):
             self.cap = None  # On utilisera get_frame()
         else:
@@ -31,91 +24,11 @@ class LaneDetection:
         self.trapezoid_height = parameters.get("trapezoid_height", 0.5)
         self.min_line_length = parameters.get("min_line_length", 50)
         self.max_line_gap = parameters.get("max_line_gap", 4)
-
-    def canny(self, image):
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        blur = cv2.GaussianBlur(gray, (self.blur_kernel, self.blur_kernel), 0)
-        _, binary = cv2.threshold(blur, self.threshold_value, 255, cv2.THRESH_BINARY)
-        return cv2.Canny(binary, self.canny_min, self.canny_max)
-
-    def region_of_interest(self, image):
-        height, width = image.shape[:2]
-        polygons = np.array([
-            (int(width * (1 - self.bottom_width) / 2), height),
-            (int(width * (1 + self.bottom_width) / 2), height),
-            (int(width * (1 + self.top_width) / 2), int(height * (1 - self.trapezoid_height))),
-            (int(width * (1 - self.top_width) / 2), int(height * (1 - self.trapezoid_height)))
-        ], dtype=np.int32)
-        mask = np.zeros_like(image)
-        cv2.fillPoly(mask, [polygons], 255)
-        return cv2.bitwise_and(image, mask)
-
-    def display_lines(self, image, lines):
-        line_image = np.zeros_like(image)
-        if lines is not None and len(lines) > 0:
-            for line in lines:
-                if line is not None and len(line) == 4 and np.all(np.isfinite(line)):
-                    x1, y1, x2, y2 = line.reshape(4)
-                    cv2.line(line_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 10)
-        return line_image
-
-    def average_slope_intercept(self, image, lines):
-        left_fit, right_fit = [], []
-        if lines is None:
-            return []
-        for line in lines:
-            x1, y1, x2, y2 = line.reshape(4)
-            if x1 == x2:  # éviter division par zéro
-                continue
-            parameters = np.polyfit((x1, x2), (y1, y2), 1)
-            slope, intercept = parameters
-            if slope < 0:
-                left_fit.append((slope, intercept))
-            else:
-                right_fit.append((slope, intercept))
-
-        if self.dual_camera:
-            # Pour deux caméras, ne retourner qu'une ligne selon le côté
-            if self.camera_side == 'left':
-                left_line = self.make_coordinates(image, np.average(left_fit, axis=0)) if left_fit else None
-                return np.array([left_line]) if left_line is not None else []
-            elif self.camera_side == 'right':
-                right_line = self.make_coordinates(image, np.average(right_fit, axis=0)) if right_fit else None
-                return np.array([right_line]) if right_line is not None else []
-            else:
-                return []
-        else:
-            # Pour une seule caméra, retourner les deux lignes si elles existent
-            result_lines = []
-            if left_fit:
-                left_line = self.make_coordinates(image, np.average(left_fit, axis=0))
-                if left_line is not None:
-                    result_lines.append(left_line)
-            if right_fit:
-                right_line = self.make_coordinates(image, np.average(right_fit, axis=0))
-                if right_line is not None:
-                    result_lines.append(right_line)
-            # Si une seule ligne détectée, possibilité d'extrapoler ou d'afficher une alerte
-            # Ici, on ne fait rien, mais on pourrait ajouter une estimation.
-            return np.array(result_lines)
-
-    def make_coordinates(self, image, line_parameters):
-        slope, intercept = line_parameters
-        y1 = image.shape[0]
-        y2 = int(y1 * (2 / 3))
-        x1 = int((y1 - intercept) / slope)
-        x2 = int((y2 - intercept) / slope)
-        return np.array([x1, y1, x2, y2])
-
-    def process_frame(self, frame):
-        canny_image = self.canny(frame)
-        cropped_image = self.region_of_interest(canny_image) if self.use_region_of_interest else canny_image
-        lines = cv2.HoughLinesP(cropped_image, 2, np.pi / 180, 50, minLineLength=self.min_line_length, maxLineGap=self.max_line_gap)
-        averaged_lines = self.average_slope_intercept(frame, lines) if lines is not None else []
-        line_image = self.display_lines(frame, averaged_lines)
-        return cv2.addWeighted(frame, 0.8, line_image, 1, 1)
+        self.height = None
+        self.width = None
 
     def get_parameters(self):
+        """Retourne les paramètres courants de détection de lignes."""
         return {
             "blur_kernel": self.blur_kernel,
             "threshold_value": self.threshold_value,
@@ -127,28 +40,123 @@ class LaneDetection:
             "min_line_length": self.min_line_length,
             "max_line_gap": self.max_line_gap,
         }
+
+    def _set_image_shape(self, image):
+        """Définit la hauteur et la largeur de l'image."""
+        if self.height is None or self.width is None:
+            self.height, self.width = image.shape[:2]
+
+    def canny(self, image):
+        """Retourne l'image après seuillage et détection de contours Canny."""
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (self.blur_kernel, self.blur_kernel), 0)
+        _, binary = cv2.threshold(blur, self.threshold_value, 255, cv2.THRESH_BINARY)
+        return cv2.Canny(binary, self.canny_min, self.canny_max)
+
+    def region_of_interest(self, image):
+        """Applique un masque trapézoïdal à l'image pour ne garder que la zone d'intérêt."""
+        polygons = np.array([
+            (int(self.width * (1 - self.bottom_width) / 2), self.height),
+            (int(self.width * (1 + self.bottom_width) / 2), self.height),
+            (int(self.width * (1 + self.top_width) / 2), int(self.height * (1 - self.trapezoid_height))),
+            (int(self.width * (1 - self.top_width) / 2), int(self.height * (1 - self.trapezoid_height)))
+        ], dtype=np.int32)
+        mask = np.zeros_like(image)
+        cv2.fillPoly(mask, [polygons], 255)
+        return cv2.bitwise_and(image, mask)
+
+    def make_coordinates(self, line_parameters):
+        """Calcule les coordonnées d'une ligne à partir de sa pente et son intercept."""
+        slope, intercept = line_parameters
+        y1 = self.height
+        y2 = int(y1 * (2 / 3))
+        x1 = int((y1 - intercept) / slope)
+        x2 = int((y2 - intercept) / slope)
+        return np.array([x1, y1, x2, y2])
+
+    def average_slope_intercept(self, lines):
+        """Moyenne les pentes/intercepts des lots de lignes pour obtenir 2 lignes gauche/droite."""
+        left_fit, right_fit = [], []
+        if lines is None:
+            return []
+        for line in lines:
+            x1, y1, x2, y2 = line.reshape(4)
+            if x1 == x2:  # éviter division par zéro
+                continue
+            slope, intercept = np.polyfit((x1, x2), (y1, y2), 1)
+            """ Potentiellement modifier la condition suivante, en effet elle risque de ne pas marcher
+            dans un virage tendu."""
+            if slope < 0:
+                left_fit.append((slope, intercept))
+            else:
+                right_fit.append((slope, intercept))
+
+        if self.dual_camera:
+            # Pour deux caméras, ne retourner qu'une ligne selon le côté
+            if self.camera_side == 'left':
+                left_line = self.make_coordinates(np.average(left_fit, axis=0)) if left_fit else None
+                return np.array([left_line]) if left_line is not None else []
+            elif self.camera_side == 'right':
+                right_line = self.make_coordinates(np.average(right_fit, axis=0)) if right_fit else None
+                return np.array([right_line]) if right_line is not None else []
+            else:
+                return []
+        else:
+            # Pour une seule caméra, retourner les deux lignes si elles existent
+            result_lines = []
+            if left_fit:
+                left_line = self.make_coordinates(np.average(left_fit, axis=0))
+                if left_line is not None:
+                    result_lines.append(left_line)
+            if right_fit:
+                right_line = self.make_coordinates(np.average(right_fit, axis=0))
+                if right_line is not None:
+                    result_lines.append(right_line)
+            return np.array(result_lines)
+
+    def get_lines(self, frame):
+        """Retourne les 2 lignes détectées (après moyenne) à partir d'une image."""
+        self._set_image_shape(frame)
+        canny_image = self.canny(frame)
+        cropped_image = self.region_of_interest(canny_image)
+        lines = cv2.HoughLinesP(
+            cropped_image, 2, np.pi / 180, 50,
+            minLineLength=self.min_line_length, maxLineGap=self.max_line_gap
+        )
+        averaged_lines = self.average_slope_intercept(lines) if lines is not None else []
+        return averaged_lines
+
+    def display(self, frame, lines, window_name="Lane Detection", resize=(1200, 600)):
+        """Affiche le résultat visuel de la détection de lignes sur une frame."""
+        self._set_image_shape(frame)
+        line_image = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        if lines is not None and len(lines) > 0:
+            for line in lines:
+                if line is not None and len(line) == 4 and np.all(np.isfinite(line)):
+                    x1, y1, x2, y2 = line.reshape(4)
+                    cv2.line(line_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 10)
+        combo_image = cv2.addWeighted(frame, 0.8, line_image, 1, 1)
+        combo_image_resized = cv2.resize(combo_image,resize)
+        cv2.imshow(window_name, combo_image_resized)
     
     def run(self):
-        if self.cap is not None:
+        """Boucle d'affichage continue pour visualiser la détection de lignes.
+            Utile uniquement si ce fichier est exécuté directement."""
+        if self.cap is not None:    # Si on utilise un fichier vidéo
             while self.cap.isOpened():
-                ret, frame = self.cap.read()
-                if not ret:
-                    break
-                processed_frame = self.process_frame(frame)
-                resized_processed_frame = cv2.resize(processed_frame, (1200, 600))
-                cv2.imshow("Lane Detection", resized_processed_frame)
+                _, frame = self.cap.read()
+                lines = self.get_lines(frame)
+                self.display(frame, lines)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
             self.cap.release()
             cv2.destroyAllWindows()
-        elif hasattr(self.video_source, "get_frame"):
-            # Utilisation d'un objet CameraStream
+        elif hasattr(self.video_source, "get_frame"):   # Si on utilise un flux vidéo
             try:
                 while True:
                     frame = self.video_source.get_frame()
-                    processed_frame = self.process_frame(frame)
-                    resized_processed_frame = cv2.resize(processed_frame, (1200, 600))
-                    cv2.imshow("Lane Detection", resized_processed_frame)
+                    lines = self.get_lines(frame)
+                    self.display(frame, lines)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
             finally:

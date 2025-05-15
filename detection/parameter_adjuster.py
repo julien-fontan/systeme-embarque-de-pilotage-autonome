@@ -5,6 +5,7 @@ import os
 
 class ParameterAdjuster:
     def __init__(self, lane_detector):
+        """Initialise l'ajusteur de paramètres pour un LaneDetection."""
         self.lane_detector = lane_detector
 
         # Charger les paramètres de base si non définis
@@ -25,6 +26,7 @@ class ParameterAdjuster:
                 lane_detector.max_line_gap = parameters.get("max_line_gap", 4)
 
     def get_live_frame(self):
+        """Retourne une frame courante depuis la source vidéo."""
         if self.lane_detector.cap is not None:
             ret, frame = self.lane_detector.cap.read()
             return frame if ret else None
@@ -34,6 +36,7 @@ class ParameterAdjuster:
             return None
 
     def adjust_canny_parameters(self):
+        """Permet d'ajuster les paramètres du seuillage et de Canny en temps réel."""
         def nothing(x):
             pass
 
@@ -64,6 +67,7 @@ class ParameterAdjuster:
         cv2.destroyWindow("Canny")
 
     def adjust_trapezoid_parameters(self):
+        """Permet d'ajuster les paramètres du trapèze de la zone d'intérêt."""
         def nothing(x):
             pass
 
@@ -92,6 +96,7 @@ class ParameterAdjuster:
         cv2.destroyWindow("Adjust Trapezoid")
 
     def adjust_hough_parameters(self):
+        """Permet d'ajuster les paramètres de la détection de lignes Hough."""
         def nothing(x):
             pass
 
@@ -108,15 +113,8 @@ class ParameterAdjuster:
             self.lane_detector.min_line_length = cv2.getTrackbarPos("Min Length", "Hough")
             self.lane_detector.max_line_gap = cv2.getTrackbarPos("Max Gap", "Hough")
 
-            processed_image = self.lane_detector.canny(frame)
-            cropped_image = self.lane_detector.region_of_interest(processed_image)
-            lines = cv2.HoughLinesP(cropped_image, 2, np.pi / 180, 50, minLineLength=self.lane_detector.min_line_length, maxLineGap=self.lane_detector.max_line_gap)
-            averaged_lines = self.lane_detector.average_slope_intercept(frame, lines) if lines is not None else []
-            line_image = self.lane_detector.display_lines(frame, averaged_lines)
-            combo_image = cv2.addWeighted(frame, 0.8, line_image, 1, 1)
-
-            resized_combo_image = cv2.resize(combo_image, (1200, 600))
-            cv2.imshow("Hough", resized_combo_image)
+            lines = self.lane_detector.get_lines(frame)
+            self.lane_detector.display(frame, lines, window_name="Hough")
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -124,6 +122,7 @@ class ParameterAdjuster:
         cv2.destroyWindow("Hough")
 
     def adjust_all_parameters(self):
+        """Enchaîne l'ajustement de tous les paramètres interactifs."""
         # On ne lit plus la première image, on ajuste en live
         self.adjust_canny_parameters()
         self.adjust_trapezoid_parameters()

@@ -14,7 +14,7 @@ class LaneFollower:
             offset = lane_center - frame_center
             if offset < -30:
                 self.motor_controller.left()
-            elif offset > 30:
+            elif offset > 30:   # 30 pixels de décalage, sûremrent à ajuster
                 self.motor_controller.right()
         elif len(lines) == 1:
             # Stratégie simple : suivre la ligne détectée

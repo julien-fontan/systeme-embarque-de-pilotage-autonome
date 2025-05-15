@@ -1,12 +1,11 @@
 class MotorController:
-    def forward(self):
-        print("Avancer")
 
     def left(self):
-        print("Tourner à gauche")
+        pass
 
     def right(self):
-        print("Tourner à droite")
+        pass
 
-    def stop(self):
-        print("Arrêt")
+"""
+REMPLISSEZ CE FICHIER POUR LE CONTRÔLE DU MOTEUR SVP
+"""
