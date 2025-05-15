@@ -41,6 +41,9 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):  # sup
     else:
         lane_detector1 = LaneDetection(video_source=camera1, dual_camera=False, parameters=parameters)
 
+    motor_controller = MotorController()
+    lane_follower = LaneFollower(dual_camera=dual_camera)
+
     try:
         while True:
             frame1 = camera1.get_frame()
@@ -52,19 +55,25 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):  # sup
                 if show_visuals:
                     lane_detector1.display(frame1, lines1, window_name="Lane Detection - Camera 1", resize=None)
                     lane_detector2.display(frame2, lines2, window_name="Lane Detection - Camera 2", resize=None)
+                # Normalement, mettre ici la logique de commande moteur pour 2 caméras (on s'en fout)
             else:
                 lines1 = lane_detector1.get_lines(frame1)
                 if show_visuals:
                     lane_detector1.display(frame1, lines1, window_name="Lane Detection - Single Camera")
 
+                """ PARTIE COMMANDE MOTEUR : A POTENTIELLEMENT MODIFIER """
+                action = lane_follower.decide_action(lines1, frame1.shape)
+                # Appeler la méthode correspondante du contrôleur moteur
+                if action == "left":
+                    motor_controller.left()
+                elif action == "right":
+                    motor_controller.right()
+                elif action == "stop":
+                    motor_controller.stop()
+                """ FIN PARTIE COMMANDE MOTEUR """
+
             if show_visuals and cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-    
-            """ ZONE A REMPLIR POUR LE CONTROLE MOTEUR"""
-            motor_controller = MotorController()
-            lane_follower = LaneFollower(motor_controller)
-            # blablabla code blababla
-            """ FIN DE LA ZONE A REMPLIR """
     finally:
         camera1.stop()
         if dual_camera:
