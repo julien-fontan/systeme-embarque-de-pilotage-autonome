@@ -62,14 +62,20 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):
                     lane_detector1.display(frame1, lines1, window_name="Lane Detection - Single Camera")
 
                 """ PARTIE COMMANDE MOTEUR : A POTENTIELLEMENT MODIFIER """
-                action = lane_follower.decide_action(lines1, frame1.shape)
-                # Appeler la méthode correspondante du contrôleur moteur
-                if action == "left":
-                    motor_controller.left()
-                elif action == "right":
-                    motor_controller.right()
-                elif action == "stop":
-                    motor_controller.stop()
+                
+                # Commande proportionnelle du moteur
+                offset = lane_follower.get_offset(lines1, frame1.shape)
+                motor_controller.set_steering(offset)
+                
+                # Ancienne commande (à garder pour compatibilité)
+                # action = lane_follower.decide_action(lines1, frame1.shape)
+                # if action == "left":
+                #     motor_controller.left()
+                # elif action == "right":
+                #     motor_controller.right()
+                # elif action == "stop":
+                #     motor_controller.stop()
+                
                 """ FIN PARTIE COMMANDE MOTEUR """
 
             if show_visuals and cv2.waitKey(1) & 0xFF == ord('q'):

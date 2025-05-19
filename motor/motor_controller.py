@@ -34,6 +34,30 @@ class MotorController:
         GPIO.output(self.IN1, GPIO.LOW)
         GPIO.output(self.IN2, GPIO.LOW)
 
+    def set_steering(self, offset, max_offset=200):
+        """
+        Commande proportionnelle du moteur selon l'offset.
+        offset: décalage (positif = droite, négatif = gauche)
+        max_offset: valeur max attendue pour l'offset (pour normaliser)
+        """
+        # Clamp offset
+        offset = max(-max_offset, min(max_offset, offset))
+        duty_cycle = min(100, 30 + int(70 * abs(offset) / max_offset))  # 30% mini, 100% max
+
+        if offset < -10:
+            # Gauche proportionnelle
+            GPIO.output(self.IN1, GPIO.HIGH)
+            GPIO.output(self.IN2, GPIO.LOW)
+            self.pwm.ChangeDutyCycle(duty_cycle)
+        elif offset > 10:
+            # Droite proportionnelle
+            GPIO.output(self.IN1, GPIO.LOW)
+            GPIO.output(self.IN2, GPIO.HIGH)
+            self.pwm.ChangeDutyCycle(duty_cycle)
+        else:
+            # Centré
+            self.stop()
+
     def __del__(self):
         self.stop()
         GPIO.cleanup()
