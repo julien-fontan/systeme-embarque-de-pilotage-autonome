@@ -7,14 +7,14 @@ import numpy as np
 import cv2
 import json
 
-def main(dual_camera=False, show_visuals=False, adjust_parameters=False):
+def main(dual_camera=False, show_visuals=False, adjust_parameters=False, use_vanishing_point=True):
 
     config_file = "dual_camera_config.json" if dual_camera else "single_camera_config.json"
     
     if adjust_parameters and show_visuals:
         # Utiliser la caméra 0 pour ajuster les paramètres
         camera1 = CameraStream(camera_id=0)
-        lane_detector = LaneDetection(video_source=camera1, dual_camera=dual_camera)
+        lane_detector = LaneDetection(video_source=camera1, dual_camera=dual_camera, use_vanishing_point=use_vanishing_point)
         adjuster = ParameterAdjuster(lane_detector)
         adjuster.adjust_all_parameters()
         # Sauvegarder les paramètres ajustés dans un fichier
@@ -36,10 +36,13 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):
     camera2 = CameraStream(camera_id=1) if dual_camera else None
 
     if dual_camera:
-        lane_detector1 = LaneDetection(video_source=camera1, dual_camera=True, camera_side='left', parameters=parameters)
-        lane_detector2 = LaneDetection(video_source=camera2, dual_camera=True, camera_side='right', parameters=parameters)
+        lane_detector1 = LaneDetection(video_source=camera1, dual_camera=True, camera_side='left', 
+                                      parameters=parameters, use_vanishing_point=use_vanishing_point)
+        lane_detector2 = LaneDetection(video_source=camera2, dual_camera=True, camera_side='right', 
+                                      parameters=parameters, use_vanishing_point=use_vanishing_point)
     else:
-        lane_detector1 = LaneDetection(video_source=camera1, dual_camera=False, parameters=parameters)
+        lane_detector1 = LaneDetection(video_source=camera1, dual_camera=False, 
+                                      parameters=parameters, use_vanishing_point=use_vanishing_point)
 
     motor_controller = MotorController()
     lane_follower = LaneFollower(dual_camera=dual_camera)
@@ -88,7 +91,7 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False):
             cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main(dual_camera=False, show_visuals=True, adjust_parameters=True)
+    main(dual_camera=False, show_visuals=True, adjust_parameters=True, use_vanishing_point=True)
     """ Si la raspberry est connectée en SSH, utiliser show_visuals=False (donc adjust_parameters=False)
     Si vous voulez visualiser les images en temps réel (et potentiellement utiliser adjust_parameters),
     connectez la raspberry à un écran, éxécutez ce code sur un terminal directement sur la carte,
