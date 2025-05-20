@@ -45,14 +45,14 @@ class MotorController:
         duty_cycle = min(100, 30 + int(70 * abs(offset) / max_offset))  # 30% mini, 100% max
 
         if offset < -10:
-            # Gauche proportionnelle
-            GPIO.output(self.IN1, GPIO.HIGH)
-            GPIO.output(self.IN2, GPIO.LOW)
-            self.pwm.ChangeDutyCycle(duty_cycle)
-        elif offset > 10:
-            # Droite proportionnelle
+            # Gauche proportionnelle - CORRECTION : on tourne à droite quand on est à gauche de la route
             GPIO.output(self.IN1, GPIO.LOW)
             GPIO.output(self.IN2, GPIO.HIGH)
+            self.pwm.ChangeDutyCycle(duty_cycle)
+        elif offset > 10:
+            # Droite proportionnelle - CORRECTION : on tourne à gauche quand on est à droite de la route
+            GPIO.output(self.IN1, GPIO.HIGH)
+            GPIO.output(self.IN2, GPIO.LOW)
             self.pwm.ChangeDutyCycle(duty_cycle)
         else:
             # Centré

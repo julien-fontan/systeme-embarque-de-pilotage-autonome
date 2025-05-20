@@ -58,8 +58,8 @@ class ParameterAdjuster:
             self.lane_detector.canny_max = cv2.getTrackbarPos("Canny Max", "Canny")
 
             canny_image = self.lane_detector.canny(frame)
-            resized_canny_image = cv2.resize(canny_image, (1200, 600))
-            cv2.imshow("Canny", resized_canny_image)
+            # resized_canny_image = cv2.resize(canny_image, (1200, 600))
+            cv2.imshow("Canny", canny_image)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -87,8 +87,8 @@ class ParameterAdjuster:
             self.lane_detector.trapezoid_height = cv2.getTrackbarPos("Height (%)", "Adjust Trapezoid") / 100
 
             masked_image = self.lane_detector.region_of_interest(frame)
-            resized_masked_image = cv2.resize(masked_image, (1200, 600))
-            cv2.imshow("Adjust Trapezoid", resized_masked_image)
+            # resized_masked_image = cv2.resize(masked_image, (1200, 600))
+            cv2.imshow("Adjust Trapezoid", masked_image)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break

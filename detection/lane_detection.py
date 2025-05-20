@@ -78,7 +78,7 @@ class LaneDetection:
         """Calcule les coordonnées d'une ligne à partir de sa pente et son intercept."""
         slope, intercept = line_parameters
         y1 = self.height
-        y2 = int(y1 * (2 / 3))
+        y2 = int(y1 * (1 / 4))
         x1 = int((y1 - intercept) / slope) if slope != 0 else int(self.width / 2)
         x2 = int((y2 - intercept) / slope) if slope != 0 else int(self.width / 2)
         return np.array([x1, y1, x2, y2])
@@ -266,8 +266,9 @@ class LaneDetection:
         averaged_lines = self.average_slope_intercept(lines) if lines is not None else []
         return averaged_lines
 
-    def display(self, frame, lines, window_name="Lane Detection", resize=(1200, 600)):
+    def display(self, frame, lines, window_name="Lane Detection", resize=None):
         """Affiche le résultat visuel de la détection de lignes sur une frame."""
+        # resize=(1200, 600)
         line_image = np.zeros_like(frame)
         if lines is not None and len(lines) > 0:
             for line in lines:

@@ -67,8 +67,8 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False, use_van
                 """ PARTIE COMMANDE MOTEUR : A POTENTIELLEMENT MODIFIER """
                 
                 # Commande proportionnelle du moteur
-                # offset = lane_follower.get_offset(lines1, frame1.shape)
-                # motor_controller.set_steering(offset)
+                offset = lane_follower.get_offset(lines1, frame1.shape)
+                motor_controller.set_steering(offset)
                 
                 # Ancienne commande (à garder pour compatibilité)
                 # action = lane_follower.decide_action(lines1, frame1.shape)
@@ -91,7 +91,7 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False, use_van
             cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main(dual_camera=False, show_visuals=True, adjust_parameters=True, use_vanishing_point=False)
+    main(dual_camera=False, show_visuals=True, adjust_parameters=False, use_vanishing_point=False)
     """ Si la raspberry est connectée en SSH, utiliser show_visuals=False (donc adjust_parameters=False)
     Si vous voulez visualiser les images en temps réel (et potentiellement utiliser adjust_parameters),
     connectez la raspberry à un écran, éxécutez ce code sur un terminal directement sur la carte,
