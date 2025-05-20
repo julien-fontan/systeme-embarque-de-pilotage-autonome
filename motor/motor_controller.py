@@ -42,14 +42,16 @@ class MotorController:
         """
         # Clamp offset
         offset = max(-max_offset, min(max_offset, offset))
-        duty_cycle = min(100, 30 + int(70 * abs(offset) / max_offset))  # 30% mini, 100% max
+        # Augmentation de la puissance minimale à 50% (au lieu de 30%)
+        # et utilisation de 100% plus rapidement
+        duty_cycle = min(60, 50 + int(50 * abs(offset) / max_offset))  # 50% mini, 100% max
 
-        if offset < -10:
+        if offset < -50:
             # Gauche proportionnelle - CORRECTION : on tourne à droite quand on est à gauche de la route
             GPIO.output(self.IN1, GPIO.LOW)
             GPIO.output(self.IN2, GPIO.HIGH)
             self.pwm.ChangeDutyCycle(duty_cycle)
-        elif offset > 10:
+        elif offset > 50:
             # Droite proportionnelle - CORRECTION : on tourne à gauche quand on est à droite de la route
             GPIO.output(self.IN1, GPIO.HIGH)
             GPIO.output(self.IN2, GPIO.LOW)
