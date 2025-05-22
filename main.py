@@ -14,7 +14,7 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False, use_van
     if adjust_parameters and show_visuals:
         # Utiliser la caméra 0 pour ajuster les paramètres
         camera1 = CameraStream(camera_id=0)
-        lane_detector = LaneDetection(video_source=camera1, dual_camera=dual_camera, use_vanishing_point=use_vanishing_point)
+        lane_detector = LaneDetection(video_source=camera1, dual_camera=dual_camera)
         adjuster = ParameterAdjuster(lane_detector)
         adjuster.adjust_all_parameters()
         # Sauvegarder les paramètres ajustés dans un fichier
@@ -37,12 +37,12 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False, use_van
 
     if dual_camera:
         lane_detector1 = LaneDetection(video_source=camera1, dual_camera=True, camera_side='left', 
-                                      parameters=parameters, use_vanishing_point=use_vanishing_point)
+                                      parameters=parameters)
         lane_detector2 = LaneDetection(video_source=camera2, dual_camera=True, camera_side='right', 
-                                      parameters=parameters, use_vanishing_point=use_vanishing_point)
+                                      parameters=parameters)
     else:
         lane_detector1 = LaneDetection(video_source=camera1, dual_camera=False, 
-                                      parameters=parameters, use_vanishing_point=use_vanishing_point)
+                                      parameters=parameters)
 
     motor_controller = MotorController()
     lane_follower = LaneFollower(dual_camera=dual_camera)
@@ -64,8 +64,6 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False, use_van
                 if show_visuals:
                     lane_detector1.display(frame1, lines1, window_name="Lane Detection - Single Camera")
 
-                """ PARTIE COMMANDE MOTEUR : A POTENTIELLEMENT MODIFIER """
-                
                 # Commande proportionnelle du moteur
                 offset = lane_follower.get_offset(lines1, frame1.shape)
                 motor_controller.set_steering(offset)
@@ -78,8 +76,6 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False, use_van
                 #     motor_controller.right()
                 # elif action == "stop":
                 #     motor_controller.stop()
-                
-                """ FIN PARTIE COMMANDE MOTEUR """
 
             if show_visuals and cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -91,7 +87,7 @@ def main(dual_camera=False, show_visuals=False, adjust_parameters=False, use_van
             cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main(dual_camera=False, show_visuals=False, adjust_parameters=False, use_vanishing_point=False)
+    main(dual_camera=False, show_visuals=False, adjust_parameters=False)
     """ Si la raspberry est connectée en SSH, utiliser show_visuals=False (donc adjust_parameters=False)
     Si vous voulez visualiser les images en temps réel (et potentiellement utiliser adjust_parameters),
     connectez la raspberry à un écran, éxécutez ce code sur un terminal directement sur la carte,

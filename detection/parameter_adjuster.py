@@ -58,8 +58,8 @@ class ParameterAdjuster:
             self.lane_detector.canny_max = cv2.getTrackbarPos("Canny Max", "Canny")
 
             canny_image = self.lane_detector.canny(frame)
-            # resized_canny_image = cv2.resize(canny_image, (1200, 600))
-            cv2.imshow("Canny", canny_image)
+            resized_canny_image = cv2.resize(canny_image, (1200, 600))
+            cv2.imshow("Canny", resized_canny_image)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -121,33 +121,9 @@ class ParameterAdjuster:
 
         cv2.destroyWindow("Hough")
         
-    def adjust_vanishing_point(self):
-        """Permet d'activer/désactiver et visualiser la détection du point de fuite."""
-        def toggle_vanishing_point(x):
-            self.lane_detector.use_vanishing_point = bool(x)
-
-        cv2.namedWindow("Vanishing Point")
-        cv2.createTrackbar("Enable VP", "Vanishing Point", int(self.lane_detector.use_vanishing_point), 1, toggle_vanishing_point)
-
-        while True:
-            frame = self.get_live_frame()
-            if frame is None:
-                print("Erreur : Impossible de lire une image de la vidéo.")
-                break
-
-            # Traiter l'image et afficher le résultat avec le point de fuite
-            lines = self.lane_detector.get_lines(frame)
-            self.lane_detector.display(frame, lines, window_name="Vanishing Point")
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-        cv2.destroyWindow("Vanishing Point")
-
     def adjust_all_parameters(self):
         """Enchaîne l'ajustement de tous les paramètres interactifs."""
         # On ne lit plus la première image, on ajuste en live
         self.adjust_canny_parameters()
         self.adjust_trapezoid_parameters()
         self.adjust_hough_parameters()
-        self.adjust_vanishing_point()  # Ajout de l'ajustement du point de fuite

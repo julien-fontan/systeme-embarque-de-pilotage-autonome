@@ -1,7 +1,7 @@
 import cv2
 import os
 import numpy as np
-from .parameter_adjuster import ParameterAdjuster
+from parameter_adjuster import ParameterAdjuster
 from collections import deque
 
 class LaneDetection:
@@ -28,12 +28,9 @@ class LaneDetection:
         self.height = None
         self.width = None
         
-        # Attributs pour le suivi temporel et le point de fuite
-        self.vanishing_point = None
-        self.previous_vanishing_points = deque(maxlen=5)  # Garde les 5 derniers points de fuite
+        # Attributs pour le suivi temporel
         self.left_line_history = deque(maxlen=5)  # Historique des lignes gauches
         self.right_line_history = deque(maxlen=5)  # Historique des lignes droites
-        self.use_vanishing_point = use_vanishing_point  # Activer/désactiver l'utilisation du point de fuite
 
     def get_parameters(self):
         """Retourne les paramètres courants de détection de lignes."""
@@ -83,125 +80,25 @@ class LaneDetection:
         x2 = int((y2 - intercept) / slope) if slope != 0 else int(self.width / 2)
         return np.array([x1, y1, x2, y2])
 
-    def detect_vanishing_point(self, lines):
-        """Détecte le point de fuite en calculant les intersections des lignes détectées."""
-        if lines is None or len(lines) < 2:
-            return None
-        
-        # Extraire les coordonnées des lignes
-        line_coords = []
-        for line in lines:
-            x1, y1, x2, y2 = line.reshape(4)
-            if x2 != x1:  # Éviter les lignes verticales
-                slope = (y2 - y1) / (x2 - x1)
-                intercept = y1 - slope * x1
-                line_coords.append((slope, intercept))
-            else:
-                return None
-            
-        # Calculer toutes les intersections possibles
-        intersections = []
-        weights = []
-        for i in range(len(line_coords)):
-            for j in range(i+1, len(line_coords)):
-                slope1, intercept1 = line_coords[i]
-                slope2, intercept2 = line_coords[j]
-                
-                # Éviter les lignes parallèles
-                if abs(slope1 - slope2) < 1e-5:
-                    continue
-                    
-                # Calculer l'intersection
-                x = (intercept2 - intercept1) / (slope1 - slope2)
-                y = slope1 * x + intercept1
-                
-                # Vérifier que l'intersection est dans une zone raisonnable
-                if 0 <= x < self.width and 0 <= y < self.height:
-                    # Plus l'angle entre les lignes est proche de 90°, plus l'intersection est fiable
-                    weight = abs(np.arctan(slope1) - np.arctan(slope2))
-                    intersections.append((x, y))
-                    weights.append(weight)
-        
-        if not intersections:
-            return None
-            
-        # Utiliser RANSAC pour trouver le meilleur point de fuite
-        best_vp = None
-        max_inliers = 0
-        
-        for _ in range(50):  # Nombre d'itérations RANSAC
-            if len(intersections) < 2:
-                # Si moins de 2 intersections, utiliser directement la première
-                idx = 0
-            else:
-                # Sélectionner aléatoirement une intersection avec un biais vers les intersections de lignes perpendiculaires
-                weights_sum = sum(weights)
-                if weights_sum == 0:
-                    idx = np.random.randint(0, len(intersections))
-                else:
-                    normalized_weights = [w/weights_sum for w in weights]
-                    idx = np.random.choice(len(intersections), p=normalized_weights)
-            
-            vp_candidate = intersections[idx]
-            
-            # Compter les inliers (intersections proches du point candidat)
-            inliers = 0
-            for x, y in intersections:
-                dist = np.sqrt((x - vp_candidate[0])**2 + (y - vp_candidate[1])**2)
-                if dist < 50:  # Seuil de distance
-                    inliers += 1
-            
-            if inliers > max_inliers:
-                max_inliers = inliers
-                best_vp = vp_candidate
-        
-        # Si le point de fuite a été trouvé, le lisser avec les précédents
-        if best_vp:
-            self.previous_vanishing_points.append(best_vp)
-            
-            # Calculer la moyenne des points de fuite récents pour stabilité
-            if self.previous_vanishing_points:
-                vp_x = np.mean([p[0] for p in self.previous_vanishing_points])
-                vp_y = np.mean([p[1] for p in self.previous_vanishing_points])
-                return (int(vp_x), int(vp_y))
-        
-        # Si on n'a pas trouvé de point de fuite, utiliser le dernier connu
-        return self.vanishing_point
-        
     def average_slope_intercept(self, lines):
         """
         Moyenne les pentes/intercepts des lots de lignes pour obtenir 2 lignes gauche/droite.
-        Utilise le point de fuite pour une meilleure classification.
         """
         left_fit, right_fit = [], []
         if lines is None:
             return []
-            
-        # Mettre à jour le point de fuite si l'option est activée
-        if self.use_vanishing_point:
-            self.vanishing_point = self.detect_vanishing_point(lines)
-            
-        # Centre de l'image par défaut si pas de point de fuite
+        
         reference_x = self.width // 2
-        if self.vanishing_point:
-            reference_x = self.vanishing_point[0]
-            
         for line in lines:
             x1, y1, x2, y2 = line.reshape(4)
             if x1 == x2:  # éviter division par zéro
                 continue
-                
             slope, intercept = np.polyfit((x1, x2), (y1, y2), 1)
-            
-            # Classification basée sur la position par rapport au point de fuite
             middle_x = (x1 + x2) / 2
-            
-            # Combiner la classification basée sur la pente et la position
             if slope < 0 and middle_x < reference_x:
                 left_fit.append((slope, intercept))
             elif slope > 0 and middle_x > reference_x:
                 right_fit.append((slope, intercept))
-            # Dans les cas ambigus, privilégier la pente
             elif slope < 0:
                 left_fit.append((slope, intercept))
             elif slope > 0:
@@ -215,7 +112,6 @@ class LaneDetection:
                     self.left_line_history.append(left_line)
                     return np.array([left_line])
                 elif self.left_line_history:
-                    # Utiliser l'historique si pas de détection actuelle
                     return np.array([np.mean(self.left_line_history, axis=0).astype(int)])
                 else:
                     return []
@@ -225,7 +121,6 @@ class LaneDetection:
                     self.right_line_history.append(right_line)
                     return np.array([right_line])
                 elif self.right_line_history:
-                    # Utiliser l'historique si pas de détection actuelle
                     return np.array([np.mean(self.right_line_history, axis=0).astype(int)])
                 else:
                     return []
@@ -242,7 +137,6 @@ class LaneDetection:
             elif self.left_line_history:
                 # Utiliser l'historique si pas de détection actuelle
                 result_lines.append(np.mean(self.left_line_history, axis=0).astype(int))
-                
             if right_fit:
                 right_line = self.make_coordinates(np.average(right_fit, axis=0))
                 if right_line is not None:
@@ -251,7 +145,6 @@ class LaneDetection:
             elif self.right_line_history:
                 # Utiliser l'historique si pas de détection actuelle
                 result_lines.append(np.mean(self.right_line_history, axis=0).astype(int))
-                
             return np.array(result_lines)
 
     def get_lines(self, frame):
@@ -268,7 +161,6 @@ class LaneDetection:
 
     def display(self, frame, lines, window_name="Lane Detection", resize=None):
         """Affiche le résultat visuel de la détection de lignes sur une frame."""
-        # resize=(1200, 600)
         line_image = np.zeros_like(frame)
         if lines is not None and len(lines) > 0:
             for line in lines:
@@ -276,28 +168,20 @@ class LaneDetection:
                 # Couleur différente selon la position de la ligne
                 color = (0, 0, 255)  # Rouge par défaut
                 middle_x = (x1 + x2) / 2
-                reference_x = self.width // 2 if self.vanishing_point is None else self.vanishing_point[0]
-                
+                reference_x = self.width // 2
                 if middle_x < reference_x:
                     color = (0, 255, 0)  # Vert pour ligne gauche
                 else:
                     color = (255, 0, 0)  # Bleu pour ligne droite
                 
                 cv2.line(line_image, (x1, y1), (x2, y2), color, 10)
-        
-        # Afficher le point de fuite s'il est détecté
-        if self.vanishing_point:
-            cv2.circle(line_image, self.vanishing_point, 10, (255, 255, 0), -1)  # Point jaune
-        
         combo_image = cv2.addWeighted(frame, 0.8, line_image, 1, 1)
-        
-        # Si on a rédimensionné l'image
         if resize:
             combo_image_resized = cv2.resize(combo_image, resize)
             cv2.imshow(window_name, combo_image_resized)
         else:
             cv2.imshow(window_name, combo_image)
-    
+
     def run(self):
         """Boucle d'affichage continue pour visualiser la détection de lignes.
             Utile uniquement si ce fichier est exécuté directement."""
