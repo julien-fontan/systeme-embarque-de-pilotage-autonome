@@ -16,8 +16,6 @@ Le système utilise la vision par ordinateur pour détecter les lignes de route,
 
 ## Architecture du système
 
-![Architecture du système](https://via.placeholder.com/800x400?text=Architecture+du+Système)
-
 Le système est organisé en plusieurs modules :
 
 1. **Module Caméra** : Acquisition des images via la caméra Raspberry Pi
